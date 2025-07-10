@@ -1,0 +1,462 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -400,
+        -215
+      ],
+      "id": "170bac0b-a2b2-487e-a834-0d4c359ae37e",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "query": "(agent OR agentic) AND (AI OR large language model OR LLM) AND cybersecurity AND (new frameworks OR multi-agent systems OR AI agents) AND (MIT OR Harvard OR top universities)\"",
+        "options": {
+          "topic": "news",
+          "max_results": 5,
+          "time_range": "day"
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 1,
+      "position": [
+        1736,
+        -40
+      ],
+      "id": "64008038-2788-43eb-9202-9c0d149f93e9",
+      "name": "Tavily"
+      
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.feeds }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        260,
+        -315
+      ],
+      "id": "bdebe556-705c-4d7b-9e11-9a2cb8b36035",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1956,
+        -215
+      ],
+      "id": "76dbe5e2-1fda-4e9a-9bb8-42150f7052b7",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "feeds",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        40,
+        -315
+      ],
+      "id": "7e64d7f4-ddc7-484f-b34c-fa0fad25ab1b",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"feeds\": [\n    \"https://news.mit.edu/rss/feed\",\n    \"https://news.mit.edu/rss/research\",\n    \"https://openai.com/news/rss.xml\",\n    \"https://jina.ai/feed.rss\",\n    \"https://news.mit.edu/topic/mitcomputers-rss.xml\",\n\"https://news.harvard.edu/gazette/section/science-technology/feed/\",\n    \"https://www.technologyreview.com/topnews.rss\",\n    \"https://campustechnology.com/rss-feeds/all-articles.aspx\",\n    \"https://www.cs.cmu.edu/news/feed.rss\",\n    \"https://research.google/blog/rss/\",\n    \"https://blog.google/technology/ai/rss/\",\n    \"https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss\",\n    \"https://feeds.arstechnica.com/arstechnica/index\",\n\"https://www.theverge.com/rss/index.xml\",\n\"https://www.wired.com/feed/rss\",\n\"https://techcrunch.com/feed/\",\n    \"https://feeds.feedburner.com/TheHackersNews\"\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -180,
+        -315
+      ],
+      "id": "3187da7a-cf30-472e-9d4c-e10e6babcffd",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d82398e2-ac1a-4087-8995-9ca38b7d50d1",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "cfceb69b-20fa-4c77-b1fe-0b956beb7dab",
+              "name": "content",
+              "value": "={{ $json['content:encodedSnippet'] ?? $json.contentSnippet }}",
+              "type": "string"
+            },
+            {
+              "id": "7d7211e3-b2e3-45a7-8fdc-84cfcd2de5c2",
+              "name": "link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "affe620a-ceef-4c22-9975-b834eee149c1",
+              "name": "Date",
+              "value": "={{ $json.pubDate }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        -315
+      ],
+      "id": "cc3ab640-a41c-40c1-a24f-74f4885dcf90",
+      "name": "Normalize"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5e0bbb2c-2eda-4ea6-9da5-529786f2a2a6",
+              "leftValue": "={{ $json.Date }}",
+              "rightValue": "={{ new Date(new Date().setDate(new Date().getDate() - 2)) }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "afterOrEquals"
+              }
+            },
+            {
+              "id": "d3c75f6d-aa8f-4be9-9f88-0153766379a7",
+              "leftValue": "={{ $json.title }}",
+              "rightValue": "\\b(AI|cybersecurity|LLMs?|agents?|agentic|deepsearch|prompt|query|vibe)\\b",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        700,
+        -315
+      ],
+      "id": "10b47920-3b22-49da-848c-f65b4ca81880",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "maxItems": 25
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        -315
+      ],
+      "id": "d6522695-2f1b-475c-abe9-b78c96be0928",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "compare": "allFieldsExcept",
+        "fieldsToExclude": "content",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        920,
+        -315
+      ],
+      "id": "f3b9adc2-1527-4434-b49c-3c62a87aead6",
+      "name": "Remove Duplicates"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1736,
+        -315
+      ],
+      "id": "da2990d6-42fe-472b-8550-59a995e9da04",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1448,
+        -220
+      ],
+      "id": "e1115344-524f-4306-aad7-0e695866621d",
+      "name": "Google Gemini Chat Model"
+      
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert assistant helping computer science students quickly understand technical articles. Given the article content below:\n\n- If the content has more than two sentences, generate a concise 1-2 sentence summary focusing on the most important technical points relevant to a computer science student.\n- If the content has two sentences or fewer, return the content as is.\n- Return only the summary of the text and nothing more.\ndon't reply with \"here's the summary\", reply with the summary right away\nArticle content:\n{{ $json.content }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        1360,
+        -440
+      ],
+      "id": "83f02dae-ea81-4d7c-b20c-5516c94cf71a",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n// Initialize sections with enhanced styling\nlet rssSection = `\n<div style=\"margin-bottom: 40px;\">\n    <h2 style=\"\n        background: linear-gradient(135deg, #f59e0b, #d97706);\n        color: white;\n        padding: 20px 25px;\n        margin: 0 0 25px 0;\n        border-radius: 12px;\n        font-size: 1.8em;\n        font-weight: 700;\n        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);\n        display: flex;\n        align-items: center;\n        gap: 12px;\n    \">\n        University & Global News Brief\n    </h2>\n</div>`;\n\nlet tavilySection = `\n<div style=\"margin-bottom: 40px;\">\n    <h2 style=\"\n        background: linear-gradient(135deg, #10b981, #059669);\n        color: white;\n        padding: 20px 25px;\n        margin: 0 0 25px 0;\n        border-radius: 12px;\n        font-size: 1.8em;\n        font-weight: 700;\n        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);\n        display: flex;\n        align-items: center;\n        gap: 12px;\n    \">\n        🔍 Search Results\n    </h2>\n</div>`;\n\n// Iterate through all items\nfor (const item of items) {\n    // Handle RSS feed items\n    if (item.json.text && item.json.title && item.json.link) {\n        rssSection += `\n            <div style=\"\n                background: linear-gradient(135deg, #fef3c7, #fde68a);\n                border-left: 5px solid #f59e0b;\n                padding: 25px;\n                margin-bottom: 25px;\n                border-radius: 0 12px 12px 0;\n                box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);\n                transition: all 0.3s ease;\n            \">\n                <h3 style=\"\n                    color: #92400e;\n                    font-size: 1.3em;\n                    font-weight: 700;\n                    margin-bottom: 15px;\n                    line-height: 1.4;\n                \">${item.json.title}</h3>\n                <p style=\"\n                    color: #78350f;\n                    font-size: 1em;\n                    line-height: 1.6;\n                    margin-bottom: 20px;\n                \">${item.json.text}</p>\n                <a href=\"${item.json.link}\" style=\"\n                    display: inline-block;\n                    background: linear-gradient(135deg, #f59e0b, #d97706);\n                    color: white;\n                    text-decoration: none;\n                    padding: 12px 20px;\n                    border-radius: 8px;\n                    font-size: 0.95em;\n                    font-weight: 600;\n                    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);\n                \">Read Full Article →</a>\n            </div>\n        `;\n    }\n\n    // Handle Tavily search results\n    if (item.json.results && Array.isArray(item.json.results)) {\n        for (const result of item.json.results) {\n            tavilySection += `\n                <div style=\"\n                    background: linear-gradient(135deg, #d1fae5, #a7f3d0);\n                    border-left: 5px solid #10b981;\n                    padding: 22px;\n                    margin-bottom: 20px;\n                    border-radius: 0 12px 12px 0;\n                    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);\n                    transition: all 0.3s ease;\n                \">\n                    <h3 style=\"\n                        color: #047857;\n                        font-size: 1.2em;\n                        font-weight: 700;\n                        margin-bottom: 15px;\n                        line-height: 1.4;\n                    \">${result.title}</h3>\n                    <a href=\"${result.url}\" style=\"\n                        display: inline-block;\n                        background: linear-gradient(135deg, #10b981, #059669);\n                        color: white;\n                        text-decoration: none;\n                        padding: 10px 18px;\n                        border-radius: 8px;\n                        font-size: 0.9em;\n                        font-weight: 600;\n                        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);\n                    \">Visit Source →</a>\n                </div>\n            `;\n        }\n    }\n}\n\n// Combine sections into enhanced HTML output\nconst htmlOutput = `\n    <div style=\"\n        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n        max-width: 800px;\n        margin: 0 auto;\n        padding: 20px;\n        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n        min-height: 100vh;\n    \">\n        <div style=\"\n            background: white;\n            border-radius: 16px;\n            box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n            overflow: hidden;\n        \">\n            <div style=\"\n                background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);\n                color: white;\n                padding: 40px 30px;\n                text-align: center;\n            \">\n                <h1 style=\"\n                    margin: 0;\n                    font-size: 2.8em;\n                    font-weight: 700;\n                \"> Daily AI News Summary</h1>\n                <p style=\"\n                    margin: 15px 0 0 0;\n                    opacity: 0.95;\n                    font-size: 1.2em;\n                \"></p>\n            </div>\n            <div style=\"padding: 35px;\">\n                ${rssSection}\n                ${tavilySection}\n            </div>\n            <div style=\"\n                background: linear-gradient(135deg, #f8fafc, #f1f5f9);\n                padding: 25px 35px;\n                text-align: center;\n                color: #64748b;\n                font-size: 0.95em;\n                border-top: 1px solid #e2e8f0;\n            \">\n                Generated on ${new Date().toLocaleDateString('en-US', { \n                  weekday: 'long', \n                  year: 'numeric', \n                  month: 'long', \n                  day: 'numeric' \n                })} at ${new Date().toLocaleTimeString('en-US', { \n                  hour: '2-digit', \n                  minute: '2-digit' \n                })}\n            </div>\n        </div>\n    </div>\n`;\n\nreturn [{ json: { html: htmlOutput } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2180,
+        -220
+      ],
+      "id": "80cd1990-7865-4e93-b95b-6c8c5e56b4f7",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "sendTo": "???@gmail.com",
+        "subject": "Latest News",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2396,
+        -215
+      ],
+      "id": "250f4d20-5655-4962-a2f8-30f06d862413",
+      "name": "Gmail",
+      "webhookId": "1cd56769-8858-4af7-b5b7-ae0b6844ade1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Tavily",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "49b56660-ef3d-4b4d-ace7-2f201c78ba3a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c414a58774f67f500e51e0317a914fdd120751bc22094e86274868b0864506a4"
+  },
+  "id": "BDrgq2KtObnvrI9P",
+  "tags": []
+}
